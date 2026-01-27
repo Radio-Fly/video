@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor Ultra HD - Studio Gold</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;700&display=swap');
+
+        body {
+            background-color: #020202;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #renderCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        .ui-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .draggable {
+            position: absolute;
+            pointer-events: auto;
+            cursor: move;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border: 1px dashed transparent;
+            transition: border 0.2s;
+        }
+
+        .draggable:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .track-input, .artist-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            text-align: center;
+            width: auto;
+            min-width: 200px;
+            caret-color: #d4af37;
+            font-family: 'Orbitron', sans-serif;
+            color: transparent; 
+            pointer-events: auto; 
+        }
+
+        .track-input:focus, .artist-input:focus {
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .track-input { font-size: 5rem; text-transform: uppercase; font-weight: 700; }
+        .artist-input { font-size: 1.5rem; font-family: 'Inter'; font-weight: 700; }
+        
+        #timeDisplay {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: transparent;
+            pointer-events: none;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 25px;
+            left: 0;
+            right: 0;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            z-index: 20;
+            flex-wrap: wrap;
+            padding: 0 20px;
+            pointer-events: auto;
+        }
+
+        .btn {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 110px;
+            justify-content: center;
+        }
+
+        .btn:hover { background: #d4af37; border-color: #d4af37; box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); }
+        .btn.active { background: #d4af37; border-color: white; }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 150px;
+        }
+
+        .slider-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #d4af37;
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            accent-color: #d4af37;
+            cursor: pointer;
+        }
+
+        #recIndicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 0, 0, 0.9);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: none;
+            z-index: 30;
+            animation: pulse 1s infinite;
+        }
+
+        .quality-select {
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0 10px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        input[type="file"] { display: none; }
+        #hiddenVideo { display: none; }
+    </style>
+</head>
+<body>
+
+    <canvas id="renderCanvas"></canvas>
+    <div id="recIndicator">GRABANDO...</div>
+    <video id="hiddenVideo" loop muted playsinline crossorigin="anonymous"></video>
+
+    <div class="ui-layer">
+        <div id="dragTitle" class="draggable" style="top: 35%; left: 50%; transform: translate(-50%, -50%);">
+            <input type="text" id="titleInput" class="track-input" value="TITULO DEL TRACK" spellcheck="false">
+        </div>
+
+        <div id="dragArtist" class="draggable" style="top: 47%; left: 50%; transform: translate(-50%, -50%);">
+            <input type="text" id="artistInput" class="artist-input" value="nombre del artista / beat type" spellcheck="false">
+        </div>
+
+        <div id="dragTime" class="draggable" style="top: 53%; left: 50%; transform: translate(-50%, -50%);">
+            <div id="timeDisplay">0:00 / 0:00</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <label for="bgFile" class="btn">🖼️ Foto</label>
+        <input type="file" id="bgFile" accept="image/*">
+        <label for="videoFile" class="btn">🎬 Video</label>
+        <input type="file" id="videoFile" accept="video/*">
+        <label for="audioFile" class="btn">🎵 Audio</label>
+        <input type="file" id="audioFile" accept="audio/*">
+        
+        <div class="slider-container">
+            <span class="slider-label">Opacidad Fondo</span>
+            <input type="range" id="bgOpacity" min="0" max="1" step="0.05" value="0.4">
+        </div>
+
+        <button id="playPauseBtn" class="btn">▶ Play</button>
+        <select id="qualitySelect" class="quality-select">
+            <option value="1080">1080p</option>
+            <option value="2160" selected>4K</option>
+        </select>
+        <button id="recordBtn" class="btn">🚀 Grabar</button>
+    </div>
+
+    <audio id="audioElement" crossOrigin="anonymous"></audio>
+
+    <script>
+        const canvas = document.getElementById('renderCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); 
+        const audio = document.getElementById('audioElement');
+        const video = document.getElementById('hiddenVideo');
+        const titleInput = document.getElementById('titleInput');
+        const artistInput = document.getElementById('artistInput');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const bgFile = document.getElementById('bgFile');
+        const videoFile = document.getElementById('videoFile');
+        const audioFile = document.getElementById('audioFile');
+        const recordBtn = document.getElementById('recordBtn');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const qualitySelect = document.getElementById('qualitySelect');
+        const recIndicator = document.getElementById('recIndicator');
+        const bgOpacityControl = document.getElementById('bgOpacity');
+
+        let audioContext, analyzer, source, dataArray, smoothedData, peaks;
+        let isPlaying = false, isRecording = false;
+        let bgImage = new Image();
+        let backgroundType = 'none';
+        let mediaRecorder, recordedChunks = [];
+
+        // --- LÓGICA DE ARRASTRE ---
+        let activeItem = null;
+        let isDragging = false;
+        let startPos = { x: 0, y: 0 };
+        let offset = { x: 0, y: 0 };
+
+        document.querySelectorAll('.draggable').forEach(item => {
+            item.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                activeItem = item;
+                isDragging = false;
+                const rect = item.getBoundingClientRect();
+                startPos.x = e.clientX;
+                startPos.y = e.clientY;
+                offset.x = e.clientX - rect.left;
+                offset.y = e.clientY - rect.top;
+                item.style.transition = 'none';
+            });
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!activeItem) return;
+            if (Math.abs(e.clientX - startPos.x) > 5 || Math.abs(e.clientY - startPos.y) > 5) {
+                isDragging = true;
+            }
+            if (isDragging) {
+                e.preventDefault();
+                const x = e.clientX - offset.x;
+                const y = e.clientY - offset.y;
+                const xPercent = (x + activeItem.offsetWidth / 2) / window.innerWidth * 100;
+                const yPercent = (y + activeItem.offsetHeight / 2) / window.innerHeight * 100;
+                activeItem.style.left = `${xPercent}%`;
+                activeItem.style.top = `${yPercent}%`;
+            }
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (activeItem) {
+                if (!isDragging && (e.target.tagName === 'INPUT')) {
+                    e.target.focus();
+                }
+                activeItem = null;
+                isDragging = false;
+            }
+        });
+
+        // --- LÓGICA PRINCIPAL ---
+        function resize() {
+            const h = parseInt(qualitySelect.value);
+            const w = Math.round((h * 16) / 9);
+            canvas.width = w; 
+            canvas.height = h;
+        }
+        window.addEventListener('resize', () => { if(!isRecording) resize(); });
+        qualitySelect.onchange = resize;
+        resize();
+
+        bgFile.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => { bgImage.src = event.target.result; backgroundType = 'image'; };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        videoFile.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (isPlaying) await togglePlayback();
+                video.src = URL.createObjectURL(file);
+                backgroundType = 'video';
+                video.load();
+            }
+        };
+
+        audioFile.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (isPlaying) await togglePlayback();
+                audio.src = URL.createObjectURL(file);
+                titleInput.value = file.name.split('.')[0].toUpperCase();
+                audio.load();
+            }
+        };
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyzer = audioContext.createAnalyser();
+                source = audioContext.createMediaElementSource(audio);
+                source.connect(analyzer);
+                analyzer.connect(audioContext.destination);
+                analyzer.fftSize = 512; 
+                analyzer.smoothingTimeConstant = 0.82; 
+                dataArray = new Uint8Array(analyzer.frequencyBinCount);
+                smoothedData = new Float32Array(analyzer.frequencyBinCount);
+                peaks = new Float32Array(analyzer.frequencyBinCount);
+            }
+        }
+
+        async function togglePlayback() {
+            initAudio();
+            if (audioContext.state === 'suspended') await audioContext.resume();
+            if (isPlaying) {
+                audio.pause(); if (backgroundType === 'video') video.pause();
+                isPlaying = false; playPauseBtn.innerText = "▶ Play"; playPauseBtn.classList.remove('active');
+            } else {
+                try {
+                    const ap = audio.play(); let vp;
+                    if (backgroundType === 'video') vp = video.play();
+                    await Promise.all([ap, vp].filter(p => p !== undefined));
+                    isPlaying = true; playPauseBtn.innerText = "⏸ Pausa"; playPauseBtn.classList.add('active');
+                } catch (err) { console.warn("Error playback."); }
+            }
+        }
+
+        playPauseBtn.onclick = togglePlayback;
+
+        function draw() {
+            requestAnimationFrame(draw);
+            ctx.fillStyle = "#020202";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const currentOpacity = parseFloat(bgOpacityControl.value);
+
+            // Fondo Visual con Opacidad regulable
+            if (backgroundType === 'video' && video.readyState >= 2) {
+                ctx.save(); ctx.globalAlpha = currentOpacity;
+                const scale = Math.max(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
+                const w = video.videoWidth * scale; const h = video.videoHeight * scale;
+                ctx.drawImage(video, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h); ctx.restore();
+            } else if (backgroundType === 'image' && bgImage.src) {
+                ctx.save(); ctx.globalAlpha = currentOpacity;
+                const scale = Math.max(canvas.width / bgImage.width, canvas.height / bgImage.height);
+                const w = bgImage.width * scale; const h = bgImage.height * scale;
+                ctx.drawImage(bgImage, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h); ctx.restore();
+            }
+
+            // Viñeta Cinematográfica (Se mantiene para dar profundidad al texto)
+            const radialGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, canvas.width/0.95);
+            radialGrad.addColorStop(0, "transparent"); radialGrad.addColorStop(1, "rgba(0, 0, 0, 0.8)");
+            ctx.fillStyle = radialGrad; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Renderizado de Textos
+            const elements = [
+                { id: 'dragTitle', input: titleInput, color: 'white', size: 0.08, font: 'Orbitron' },
+                { id: 'dragArtist', input: artistInput, color: '#d4af37', size: 0.026, font: 'Inter' },
+                { id: 'dragTime', text: formatTime(audio.currentTime) + " / " + formatTime(audio.duration), color: 'rgba(255, 255, 255, 0.3)', size: 0.018, font: 'Orbitron' }
+            ];
+
+            elements.forEach(el => {
+                const domEl = document.getElementById(el.id);
+                const rect = domEl.getBoundingClientRect();
+                const posX = (rect.left + rect.width / 2) / window.innerWidth * canvas.width;
+                const posY = (rect.top + rect.height / 2) / window.innerHeight * canvas.height;
+                ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = el.color;
+                ctx.font = `700 ${canvas.height * el.size}px ${el.font}`;
+                const val = el.input ? el.input.value.toUpperCase() : el.text;
+                ctx.fillText(val, posX, posY);
+            });
+
+            // VÚMETRO BAJO DE CRISTAL DORADO / CHAMPÁN
+            if (dataArray && (isPlaying || isRecording)) {
+                analyzer.getByteFrequencyData(dataArray);
+                
+                const bins = Math.floor(dataArray.length * 0.75); 
+                const barSpacing = 3;
+                const totalWidth = canvas.width * 0.94;
+                const barWidth = totalWidth / bins;
+                
+                let startX = (canvas.width - totalWidth) / 2;
+                const baselineY = canvas.height - (canvas.height * 0.04);
+                const maxHeight = canvas.height * 0.12; // Vúmetro más bajito y elegante
+
+                for (let i = 0; i < bins; i++) {
+                    const val = dataArray[i];
+                    smoothedData[i] = Math.max(val, smoothedData[i] - 3.5);
+                    
+                    if (val >= peaks[i]) {
+                        peaks[i] = val;
+                    } else {
+                        peaks[i] = Math.max(0, peaks[i] - 0.8);
+                    }
+
+                    const bH = (smoothedData[i] / 255) * maxHeight;
+                    const peakH = (peaks[i] / 255) * maxHeight;
+
+                    if (bH > 0) {
+                        // Gradiente Oro / Champán / Blanco
+                        const grad = ctx.createLinearGradient(0, baselineY, 0, baselineY - maxHeight);
+                        grad.addColorStop(0.0, "#d4af37"); // Oro Base
+                        grad.addColorStop(0.6, "#fcf6ba"); // Champán Brillante
+                        grad.addColorStop(1.0, "#ffffff"); // Blanco Hielo (Puntas)
+
+                        ctx.fillStyle = grad;
+                        
+                        // Brillo sutil
+                        if (smoothedData[i] > 180) {
+                            ctx.save();
+                            ctx.shadowBlur = 10;
+                            ctx.shadowColor = "#d4af37";
+                            ctx.fillRect(startX, baselineY - bH, barWidth - barSpacing, bH);
+                            ctx.restore();
+                        } else {
+                            ctx.fillRect(startX, baselineY - bH, barWidth - barSpacing, bH);
+                        }
+
+                        // Reflejo de cristal superior
+                        ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+                        ctx.fillRect(startX, baselineY - bH, barWidth - barSpacing, 1);
+                    }
+
+                    // Marcador de Pico Minimalista
+                    if (peakH > 1) {
+                        ctx.fillStyle = "white";
+                        ctx.save();
+                        ctx.globalAlpha = 0.5;
+                        ctx.fillRect(startX, baselineY - peakH - 2, barWidth - barSpacing, 1.5);
+                        ctx.restore();
+                    }
+
+                    startX += barWidth;
+                }
+            }
+        }
+        draw();
+
+        // --- GRABACIÓN ---
+        recordBtn.onclick = () => { if (!isRecording) startRecording(); else stopRecording(); };
+
+        async function startRecording() {
+            resize(); if (!isPlaying) await togglePlayback();
+            recordedChunks = [];
+            const cStream = canvas.captureStream(60); 
+            const aDest = audioContext.createMediaStreamDestination();
+            source.connect(aDest);
+            const combined = new MediaStream([...cStream.getVideoTracks(), ...aDest.stream.getAudioTracks()]);
+            
+            const options = { 
+                mimeType: 'video/webm;codecs=vp9,opus', 
+                videoBitsPerSecond: qualitySelect.value === "2160" ? 80000000 : 40000000 
+            };
+            
+            try { mediaRecorder = new MediaRecorder(combined, options); } catch (e) { mediaRecorder = new MediaRecorder(combined); }
+
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                a.download = `render_gold_${qualitySelect.value}p.webm`; a.click();
+            };
+            mediaRecorder.start(500);
+            isRecording = true; recordBtn.innerText = "🛑 Detener"; recordBtn.classList.add('active');
+            recIndicator.style.display = "block"; recIndicator.innerText = `GRABANDO ${qualitySelect.value}p...`;
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop(); isRecording = false;
+            recordBtn.innerText = "🚀 Grabar"; recordBtn.classList.remove('active');
+            recIndicator.style.display = "none";
+        }
+    </script>
+</body>
+</html>
