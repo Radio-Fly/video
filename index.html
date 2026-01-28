@@ -49,7 +49,7 @@
             align-items: center;
             padding: 15px;
             border: 1px dashed transparent;
-            transition: border 0.2s, background 0.2s;
+            transition: border 0.2s, background 0.2s, opacity 0.5s ease-in-out;
             min-width: 50px;
             min-height: 20px;
         }
@@ -291,6 +291,11 @@
         </div>
 
         <div class="toggle-container">
+            <span class="label-sm">Ver Títulos</span>
+            <input type="checkbox" id="titlesToggle" class="w-4 h-4 accent-yellow-500" checked>
+        </div>
+
+        <div class="toggle-container">
             <span class="label-sm">Audio del Video</span>
             <input type="checkbox" id="videoAudioToggle" class="w-4 h-4 accent-yellow-500">
         </div>
@@ -365,6 +370,7 @@
         const vuColorPicker = document.getElementById('vuColorPicker');
         
         const vumetroToggle = document.getElementById('vumetroToggle');
+        const titlesToggle = document.getElementById('titlesToggle');
         const videoAudioToggle = document.getElementById('videoAudioToggle');
 
         let audioContext, analyzer, musicSource, videoAudioSource, dataArray, smoothedData;
@@ -380,6 +386,9 @@
         let bgImage = new Image();
         let backgroundType = 'none';
         let fallingPeaks = [];
+
+        // Estado para la transición suave de opacidad de los títulos
+        let titlesAlpha = 1;
 
         videoAudioToggle.onchange = () => {
             video.muted = !videoAudioToggle.checked;
@@ -411,22 +420,17 @@
         };
         fpsSelect.onchange = () => targetFps = parseInt(fpsSelect.value);
 
-        // LÓGICA DE ARRASTRE MEJORADA
+        // LÓGICA DE ARRASTRRE MEJORADA
         let activeItem = null;
         let offset = { x: 0, y: 0 };
 
         document.querySelectorAll('.draggable').forEach(item => {
             item.addEventListener('mousedown', (e) => {
-                // Si el clic es en un input de texto o en el slider, no arrastrar
                 if (e.target.tagName === 'INPUT') return; 
-                
                 activeItem = item;
                 const rect = item.getBoundingClientRect();
-                
-                // Calculamos el offset respecto al centro del elemento o posición de clic
                 offset.x = e.clientX - rect.left;
                 offset.y = e.clientY - rect.top;
-                
                 item.style.transition = 'none';
                 item.style.zIndex = "100";
             });
@@ -434,14 +438,10 @@
 
         window.addEventListener('mousemove', (e) => {
             if (!activeItem) return;
-            
-            // Calculamos posición en porcentaje para mantener responsividad
             const x = e.clientX - offset.x + (activeItem.offsetWidth / 2);
             const y = e.clientY - offset.y + (activeItem.offsetHeight / 2);
-            
             const xPercent = (x / window.innerWidth) * 100;
             const yPercent = (y / window.innerHeight) * 100;
-            
             activeItem.style.left = `${xPercent}%`;
             activeItem.style.top = `${yPercent}%`;
         });
@@ -546,20 +546,36 @@
                 ctx.restore();
             }
 
-            const elements = [
-                { id: 'dragTitle', input: titleInput, color: 'white', size: 0.08, font: currentFont },
-                { id: 'dragArtist', input: artistInput, color: accentColor, size: 0.026, font: currentFont }
-            ];
+            // Gestión de transición suave de títulos
+            if (titlesToggle.checked) {
+                titlesAlpha = Math.min(1, titlesAlpha + 0.05);
+                document.getElementById('dragTitle').style.opacity = titlesAlpha;
+                document.getElementById('dragArtist').style.opacity = titlesAlpha;
+            } else {
+                titlesAlpha = Math.max(0, titlesAlpha - 0.05);
+                document.getElementById('dragTitle').style.opacity = titlesAlpha;
+                document.getElementById('dragArtist').style.opacity = titlesAlpha;
+            }
 
-            elements.forEach(el => {
-                const domEl = document.getElementById(el.id);
-                const rect = domEl.getBoundingClientRect();
-                const posX = (rect.left + rect.width / 2) / window.innerWidth * canvas.width;
-                const posY = (rect.top + rect.height / 2) / window.innerHeight * canvas.height;
-                ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = el.color;
-                ctx.font = `700 ${canvas.height * el.size}px ${el.font}`;
-                ctx.fillText(el.input.value.toUpperCase(), posX, posY);
-            });
+            if (titlesAlpha > 0) {
+                const elements = [
+                    { id: 'dragTitle', input: titleInput, color: 'white', size: 0.08, font: currentFont },
+                    { id: 'dragArtist', input: artistInput, color: accentColor, size: 0.026, font: currentFont }
+                ];
+
+                elements.forEach(el => {
+                    ctx.save();
+                    ctx.globalAlpha = titlesAlpha;
+                    const domEl = document.getElementById(el.id);
+                    const rect = domEl.getBoundingClientRect();
+                    const posX = (rect.left + rect.width / 2) / window.innerWidth * canvas.width;
+                    const posY = (rect.top + rect.height / 2) / window.innerHeight * canvas.height;
+                    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = el.color;
+                    ctx.font = `700 ${canvas.height * el.size}px ${el.font}`;
+                    ctx.fillText(el.input.value.toUpperCase(), posX, posY);
+                    ctx.restore();
+                });
+            }
 
             if (vumetroToggle.checked && analyzer) {
                 const vuRect = document.getElementById('dragVu').getBoundingClientRect();
