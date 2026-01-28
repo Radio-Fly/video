@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reproductor Ultra HD - Studio Gold</title>
+    <title>Reproductor Ultra HD - Studio Pro Custom</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;700&family=Playfair+Display:wght@700&family=JetBrains+Mono:wght@700&family=Bebas+Neue&display=swap');
 
         body {
             background-color: #020202;
@@ -56,6 +56,12 @@
             border-color: rgba(255, 255, 255, 0.3);
         }
 
+        #dragVu {
+            width: 90%;
+            height: 100px;
+            justify-content: center;
+        }
+
         .track-input, .artist-input {
             background: transparent;
             border: none;
@@ -63,8 +69,7 @@
             text-align: center;
             width: auto;
             min-width: 200px;
-            caret-color: #d4af37;
-            font-family: 'Orbitron', sans-serif;
+            caret-color: currentColor;
             color: transparent; 
             pointer-events: auto; 
         }
@@ -75,7 +80,7 @@
         }
 
         .track-input { font-size: 5rem; text-transform: uppercase; font-weight: 700; }
-        .artist-input { font-size: 1.5rem; font-family: 'Inter'; font-weight: 700; }
+        .artist-input { font-size: 1.5rem; font-weight: 700; }
         
         #timeDisplay {
             font-family: 'Orbitron', sans-serif;
@@ -87,8 +92,8 @@
         .controls {
             position: fixed;
             bottom: 25px;
-            left: 0;
-            right: 0;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
             gap: 12px;
             justify-content: center;
@@ -96,10 +101,31 @@
             flex-wrap: wrap;
             padding: 0 20px;
             pointer-events: auto;
+            width: max-content;
+        }
+
+        .style-panel {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+            min-width: 260px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .btn {
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             padding: 10px 18px;
@@ -113,40 +139,65 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            min-width: 110px;
             justify-content: center;
         }
 
-        .btn:hover { background: #d4af37; border-color: #d4af37; box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); }
-        .btn.active { background: #d4af37; border-color: white; }
+        .btn:hover { background: rgba(255, 255, 255, 0.15); border-color: white; }
 
-        .slider-container {
+        .slider-container, .toggle-container {
             display: flex;
             flex-direction: column;
             gap: 4px;
-            background: rgba(0, 0, 0, 0.85);
-            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
             border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            min-width: 150px;
         }
 
-        .slider-label {
+        .toggle-container {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .label-sm {
             font-size: 0.6rem;
             text-transform: uppercase;
-            color: #d4af37;
+            color: #aaa;
             font-weight: bold;
         }
 
-        input[type="range"] {
-            accent-color: #d4af37;
+        select, input[type="range"] {
+            background: #111;
+            color: white;
+            border: none;
+            font-size: 0.75rem;
+            outline: none;
+            padding: 4px;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        input[type="color"] {
+            appearance: none;
+            -webkit-appearance: none;
+            border: none;
+            width: 32px;
+            height: 32px;
             cursor: pointer;
+            background: transparent;
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border-radius: 50%;
+            border: 2px solid white;
         }
 
         #recIndicator {
             position: fixed;
             top: 20px;
-            right: 20px;
+            left: 20px;
             background: rgba(255, 0, 0, 0.9);
             padding: 5px 15px;
             border-radius: 20px;
@@ -155,17 +206,6 @@
             display: none;
             z-index: 30;
             animation: pulse 1s infinite;
-        }
-
-        .quality-select {
-            background: rgba(0, 0, 0, 0.85);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 0 10px;
-            font-size: 0.7rem;
-            cursor: pointer;
-            outline: none;
         }
 
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
@@ -179,7 +219,86 @@
     <div id="recIndicator">GRABANDO...</div>
     <video id="hiddenVideo" loop muted playsinline crossorigin="anonymous"></video>
 
+    <div class="style-panel">
+        <!-- Ajustes de Texto -->
+        <div class="flex flex-col gap-1">
+            <span class="label-sm">Fuente General</span>
+            <select id="fontSelect">
+                <option value="Orbitron">Orbitron (Tech)</option>
+                <option value="Bebas Neue">Bebas Neue (Impacto)</option>
+                <option value="Playfair Display">Playfair (Serif)</option>
+                <option value="JetBrains Mono">JetBrains (Mono)</option>
+                <option value="Inter">Inter (Minimalista)</option>
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <span class="label-sm">Color Artista</span>
+            <div class="flex items-center gap-3 bg-white/5 p-2 rounded-lg border border-white/10">
+                <input type="color" id="textColorPicker" value="#d4af37">
+            </div>
+        </div>
+
+        <!-- Ajustes de Rendimiento -->
+        <div class="flex flex-col gap-1">
+            <span class="label-sm">FPS (Fluidez)</span>
+            <select id="fpsSelect">
+                <option value="30">30 FPS (Cine/Estándar)</option>
+                <option value="60" selected>60 FPS (Ultra Fluido)</option>
+            </select>
+        </div>
+
+        <!-- Ajustes del Vúmetro -->
+        <div class="p-2 border-l-2 border-yellow-500 bg-yellow-500/5 flex flex-col gap-2 my-2">
+            <span class="label-sm text-yellow-500">Ajustes del Vúmetro</span>
+            
+            <div class="flex flex-col gap-1">
+                <span class="label-sm">Color del Vúmetro</span>
+                <input type="color" id="vuColorPicker" value="#ffffff">
+            </div>
+
+            <div class="slider-container">
+                <span class="label-sm">Ancho (Escala X)</span>
+                <input type="range" id="vumetroScale" min="0.1" max="1.0" step="0.01" value="0.9">
+            </div>
+
+            <div class="slider-container">
+                <span class="label-sm">Altura Máxima</span>
+                <input type="range" id="vumetroHeight" min="0.05" max="0.5" step="0.01" value="0.15">
+            </div>
+        </div>
+
+        <div class="slider-container">
+            <span class="label-sm">Tamaño Título</span>
+            <input type="range" id="titleSize" min="0.02" max="0.15" step="0.005" value="0.08">
+        </div>
+
+        <div class="slider-container">
+            <span class="label-sm">Tamaño Artista</span>
+            <input type="range" id="artistSize" min="0.01" max="0.06" step="0.002" value="0.026">
+        </div>
+
+        <div class="toggle-container">
+            <span class="label-sm">Ver Vúmetro</span>
+            <input type="checkbox" id="vumetroToggle" class="w-4 h-4 accent-yellow-500" checked>
+        </div>
+
+        <div class="toggle-container">
+            <span class="label-sm">Audio del Video</span>
+            <input type="checkbox" id="videoAudioToggle" class="w-4 h-4 accent-yellow-500">
+        </div>
+
+        <div class="slider-container">
+            <span class="label-sm">Opacidad Fondo</span>
+            <input type="range" id="bgOpacity" min="0" max="1" step="0.05" value="0.4">
+        </div>
+    </div>
+
     <div class="ui-layer">
+        <div id="dragVu" class="draggable" style="top: 90%; left: 50%; transform: translate(-50%, -50%);">
+            <div class="label-sm opacity-20 pointer-events-none">VÚMETRO (ARRASTRAR)</div>
+        </div>
+
         <div id="dragTitle" class="draggable" style="top: 35%; left: 50%; transform: translate(-50%, -50%);">
             <input type="text" id="titleInput" class="track-input" value="TITULO DEL TRACK" spellcheck="false">
         </div>
@@ -201,20 +320,16 @@
         <label for="audioFile" class="btn">🎵 Audio</label>
         <input type="file" id="audioFile" accept="audio/*">
         
-        <div class="slider-container">
-            <span class="slider-label">Opacidad Fondo</span>
-            <input type="range" id="bgOpacity" min="0" max="1" step="0.05" value="0.4">
-        </div>
-
         <button id="playPauseBtn" class="btn">▶ Play</button>
-        <select id="qualitySelect" class="quality-select">
+        <select id="qualitySelect" class="quality-select btn">
+            <option value="720">720p</option>
             <option value="1080">1080p</option>
             <option value="2160" selected>4K</option>
         </select>
-        <button id="recordBtn" class="btn">🚀 Grabar</button>
+        <button id="recordBtn" class="btn bg-red-600 border-red-500 hover:bg-red-700">Grabar</button>
     </div>
 
-    <audio id="audioElement" crossOrigin="anonymous"></audio>
+    <audio id="audioElement" crossorigin="anonymous"></audio>
 
     <script>
         const canvas = document.getElementById('renderCanvas');
@@ -223,36 +338,68 @@
         const video = document.getElementById('hiddenVideo');
         const titleInput = document.getElementById('titleInput');
         const artistInput = document.getElementById('artistInput');
-        const timeDisplay = document.getElementById('timeDisplay');
         const bgFile = document.getElementById('bgFile');
         const videoFile = document.getElementById('videoFile');
         const audioFile = document.getElementById('audioFile');
         const recordBtn = document.getElementById('recordBtn');
         const playPauseBtn = document.getElementById('playPauseBtn');
         const qualitySelect = document.getElementById('qualitySelect');
-        const recIndicator = document.getElementById('recIndicator');
+        const fontSelect = document.getElementById('fontSelect');
+        const fpsSelect = document.getElementById('fpsSelect');
         const bgOpacityControl = document.getElementById('bgOpacity');
+        const titleSizeControl = document.getElementById('titleSize');
+        const artistSizeControl = document.getElementById('artistSize');
+        const vumetroScaleControl = document.getElementById('vumetroScale');
+        const vumetroHeightControl = document.getElementById('vumetroHeight');
+        const textColorPicker = document.getElementById('textColorPicker');
+        const vuColorPicker = document.getElementById('vuColorPicker');
+        const videoAudioToggle = document.getElementById('videoAudioToggle');
+        const vumetroToggle = document.getElementById('vumetroToggle');
 
-        let audioContext, analyzer, source, dataArray, smoothedData, peaks;
+        let audioContext, analyzer, musicSource, videoAudioSource, dataArray, smoothedData;
         let isPlaying = false, isRecording = false;
+        
+        let accentColor = "#d4af37";
+        let vumetroColor = "#ffffff";
+        let currentFont = "Orbitron";
+        let targetFps = 60;
+
         let bgImage = new Image();
         let backgroundType = 'none';
-        let mediaRecorder, recordedChunks = [];
 
-        // --- LÓGICA DE ARRASTRE ---
+        let mediaRecorder, recordedChunks = [];
+        let audioDest = null;
+        let fallingPeaks = [];
+
+        // Selectores de Color y FPS
+        textColorPicker.oninput = (e) => {
+            accentColor = e.target.value;
+            titleInput.style.caretColor = accentColor;
+        };
+
+        vuColorPicker.oninput = (e) => {
+            vumetroColor = e.target.value;
+        };
+
+        fontSelect.onchange = () => {
+            currentFont = fontSelect.value;
+            titleInput.style.fontFamily = currentFont;
+            artistInput.style.fontFamily = currentFont;
+        };
+
+        fpsSelect.onchange = () => {
+            targetFps = parseInt(fpsSelect.value);
+        };
+
+        // Arrastre UI
         let activeItem = null;
-        let isDragging = false;
-        let startPos = { x: 0, y: 0 };
         let offset = { x: 0, y: 0 };
 
         document.querySelectorAll('.draggable').forEach(item => {
             item.addEventListener('mousedown', (e) => {
                 if (e.button !== 0) return;
                 activeItem = item;
-                isDragging = false;
                 const rect = item.getBoundingClientRect();
-                startPos.x = e.clientX;
-                startPos.y = e.clientY;
                 offset.x = e.clientX - rect.left;
                 offset.y = e.clientY - rect.top;
                 item.style.transition = 'none';
@@ -261,38 +408,20 @@
 
         window.addEventListener('mousemove', (e) => {
             if (!activeItem) return;
-            if (Math.abs(e.clientX - startPos.x) > 5 || Math.abs(e.clientY - startPos.y) > 5) {
-                isDragging = true;
-            }
-            if (isDragging) {
-                e.preventDefault();
-                const x = e.clientX - offset.x;
-                const y = e.clientY - offset.y;
-                const xPercent = (x + activeItem.offsetWidth / 2) / window.innerWidth * 100;
-                const yPercent = (y + activeItem.offsetHeight / 2) / window.innerHeight * 100;
-                activeItem.style.left = `${xPercent}%`;
-                activeItem.style.top = `${yPercent}%`;
-            }
+            const xPercent = (e.clientX - offset.x + activeItem.offsetWidth / 2) / window.innerWidth * 100;
+            const yPercent = (e.clientY - offset.y + activeItem.offsetHeight / 2) / window.innerHeight * 100;
+            activeItem.style.left = `${xPercent}%`;
+            activeItem.style.top = `${yPercent}%`;
         });
 
-        window.addEventListener('mouseup', (e) => {
-            if (activeItem) {
-                if (!isDragging && (e.target.tagName === 'INPUT')) {
-                    e.target.focus();
-                }
-                activeItem = null;
-                isDragging = false;
-            }
-        });
+        window.addEventListener('mouseup', () => { activeItem = null; });
 
-        // --- LÓGICA PRINCIPAL ---
         function resize() {
             const h = parseInt(qualitySelect.value);
             const w = Math.round((h * 16) / 9);
             canvas.width = w; 
             canvas.height = h;
         }
-        window.addEventListener('resize', () => { if(!isRecording) resize(); });
         qualitySelect.onchange = resize;
         resize();
 
@@ -300,25 +429,27 @@
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = (event) => { bgImage.src = event.target.result; backgroundType = 'image'; };
+                reader.onload = (event) => {
+                    bgImage.src = event.target.result;
+                    backgroundType = 'image';
+                };
                 reader.readAsDataURL(file);
             }
         };
 
-        videoFile.onchange = async (e) => {
+        videoFile.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
-                if (isPlaying) await togglePlayback();
                 video.src = URL.createObjectURL(file);
                 backgroundType = 'video';
+                video.muted = !videoAudioToggle.checked;
                 video.load();
             }
         };
 
-        audioFile.onchange = async (e) => {
+        audioFile.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
-                if (isPlaying) await togglePlayback();
                 audio.src = URL.createObjectURL(file);
                 titleInput.value = file.name.split('.')[0].toUpperCase();
                 audio.load();
@@ -336,178 +467,179 @@
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyzer = audioContext.createAnalyser();
-                source = audioContext.createMediaElementSource(audio);
-                source.connect(analyzer);
-                analyzer.connect(audioContext.destination);
-                analyzer.fftSize = 512; 
-                analyzer.smoothingTimeConstant = 0.82; 
+                analyzer.fftSize = 512;
+                analyzer.smoothingTimeConstant = 0.8;
+                
                 dataArray = new Uint8Array(analyzer.frequencyBinCount);
                 smoothedData = new Float32Array(analyzer.frequencyBinCount);
-                peaks = new Float32Array(analyzer.frequencyBinCount);
+                fallingPeaks = new Array(analyzer.frequencyBinCount).fill(0).map(() => ({ pos: 0, vel: 0 }));
+
+                musicSource = audioContext.createMediaElementSource(audio);
+                videoAudioSource = audioContext.createMediaElementSource(video);
+
+                musicSource.connect(analyzer);
+                videoAudioSource.connect(analyzer);
+                
+                analyzer.connect(audioContext.destination);
             }
         }
 
         async function togglePlayback() {
+            if (audioContext && audioContext.state === 'suspended') await audioContext.resume();
             initAudio();
-            if (audioContext.state === 'suspended') await audioContext.resume();
+
             if (isPlaying) {
-                audio.pause(); if (backgroundType === 'video') video.pause();
-                isPlaying = false; playPauseBtn.innerText = "▶ Play"; playPauseBtn.classList.remove('active');
+                audio.pause(); video.pause();
+                isPlaying = false; playPauseBtn.innerText = "▶ Play";
             } else {
                 try {
-                    const ap = audio.play(); let vp;
-                    if (backgroundType === 'video') vp = video.play();
-                    await Promise.all([ap, vp].filter(p => p !== undefined));
-                    isPlaying = true; playPauseBtn.innerText = "⏸ Pausa"; playPauseBtn.classList.add('active');
-                } catch (err) { console.warn("Error playback."); }
+                    if (audio.src && audio.src !== "") audio.play();
+                    if (backgroundType === 'video') video.play();
+                    isPlaying = true; playPauseBtn.innerText = "⏸ Pausa";
+                } catch (e) { console.error(e); }
             }
         }
 
         playPauseBtn.onclick = togglePlayback;
 
-        function draw() {
+        let lastDrawTime = 0;
+        function draw(now) {
             requestAnimationFrame(draw);
+            
+            // Limitador de FPS
+            const delta = now - lastDrawTime;
+            const interval = 1000 / targetFps;
+            if (delta < interval) return;
+            lastDrawTime = now - (delta % interval);
+
             ctx.fillStyle = "#020202";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             const currentOpacity = parseFloat(bgOpacityControl.value);
 
-            // Fondo Visual con Opacidad regulable
-            if (backgroundType === 'video' && video.readyState >= 2) {
-                ctx.save(); ctx.globalAlpha = currentOpacity;
-                const scale = Math.max(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
-                const w = video.videoWidth * scale; const h = video.videoHeight * scale;
-                ctx.drawImage(video, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h); ctx.restore();
-            } else if (backgroundType === 'image' && bgImage.src) {
+            if (backgroundType === 'image' && bgImage.complete) {
                 ctx.save(); ctx.globalAlpha = currentOpacity;
                 const scale = Math.max(canvas.width / bgImage.width, canvas.height / bgImage.height);
                 const w = bgImage.width * scale; const h = bgImage.height * scale;
-                ctx.drawImage(bgImage, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h); ctx.restore();
+                ctx.drawImage(bgImage, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+                ctx.restore();
+            } else if (backgroundType === 'video') {
+                ctx.save(); ctx.globalAlpha = currentOpacity;
+                const scale = Math.max(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
+                const w = video.videoWidth * scale; const h = video.videoHeight * scale;
+                ctx.drawImage(video, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+                ctx.restore();
             }
 
-            // Viñeta Cinematográfica (Se mantiene para dar profundidad al texto)
-            const radialGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, canvas.width/0.95);
-            radialGrad.addColorStop(0, "transparent"); radialGrad.addColorStop(1, "rgba(0, 0, 0, 0.8)");
-            ctx.fillStyle = radialGrad; ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Renderizado de Textos
             const elements = [
-                { id: 'dragTitle', input: titleInput, color: 'white', size: 0.08, font: 'Orbitron' },
-                { id: 'dragArtist', input: artistInput, color: '#d4af37', size: 0.026, font: 'Inter' },
+                { id: 'dragTitle', input: titleInput, color: 'white', size: parseFloat(titleSizeControl.value), font: currentFont },
+                { id: 'dragArtist', input: artistInput, color: accentColor, size: parseFloat(artistSizeControl.value), font: currentFont },
                 { id: 'dragTime', text: formatTime(audio.currentTime) + " / " + formatTime(audio.duration), color: 'rgba(255, 255, 255, 0.3)', size: 0.018, font: 'Orbitron' }
             ];
 
             elements.forEach(el => {
                 const domEl = document.getElementById(el.id);
+                if(!domEl) return;
                 const rect = domEl.getBoundingClientRect();
                 const posX = (rect.left + rect.width / 2) / window.innerWidth * canvas.width;
                 const posY = (rect.top + rect.height / 2) / window.innerHeight * canvas.height;
                 ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = el.color;
                 ctx.font = `700 ${canvas.height * el.size}px ${el.font}`;
-                const val = el.input ? el.input.value.toUpperCase() : el.text;
-                ctx.fillText(val, posX, posY);
+                ctx.fillText(el.input ? el.input.value.toUpperCase() : el.text, posX, posY);
             });
 
-            // VÚMETRO BAJO DE CRISTAL DORADO / CHAMPÁN
-            if (dataArray && (isPlaying || isRecording)) {
+            if (vumetroToggle.checked && analyzer) {
+                const vuContainer = document.getElementById('dragVu');
+                const vuRect = vuContainer.getBoundingClientRect();
                 analyzer.getByteFrequencyData(dataArray);
-                
-                const bins = Math.floor(dataArray.length * 0.75); 
-                const barSpacing = 3;
-                const totalWidth = canvas.width * 0.94;
-                const barWidth = totalWidth / bins;
-                
-                let startX = (canvas.width - totalWidth) / 2;
-                const baselineY = canvas.height - (canvas.height * 0.04);
-                const maxHeight = canvas.height * 0.12; // Vúmetro más bajito y elegante
+                const bins = Math.floor(dataArray.length * 0.75);
+                const scaleX = parseFloat(vumetroScaleControl.value);
+                const totalWidth = canvas.width * scaleX;
+                const barGap = 4;
+                const barWidth = (totalWidth / bins);
+                const baselineX = (vuRect.left + vuRect.width / 2) / window.innerWidth * canvas.width;
+                const baselineY = (vuRect.top + vuRect.height / 2) / window.innerHeight * canvas.height;
+                const maxHeight = canvas.height * parseFloat(vumetroHeightControl.value);
+                const gravity = 0.4 * (maxHeight / 100); 
+                let startX = baselineX - (totalWidth / 2);
 
                 for (let i = 0; i < bins; i++) {
                     const val = dataArray[i];
                     smoothedData[i] = Math.max(val, smoothedData[i] - 3.5);
-                    
-                    if (val >= peaks[i]) {
-                        peaks[i] = val;
+                    const h = (smoothedData[i] / 255) * maxHeight;
+                    if (h > fallingPeaks[i].pos) {
+                        fallingPeaks[i].pos = h;
+                        fallingPeaks[i].vel = 0;
                     } else {
-                        peaks[i] = Math.max(0, peaks[i] - 0.8);
+                        fallingPeaks[i].vel += gravity;
+                        fallingPeaks[i].pos -= fallingPeaks[i].vel;
+                        if (fallingPeaks[i].pos < 0) fallingPeaks[i].pos = 0;
                     }
-
-                    const bH = (smoothedData[i] / 255) * maxHeight;
-                    const peakH = (peaks[i] / 255) * maxHeight;
-
-                    if (bH > 0) {
-                        // Gradiente Oro / Champán / Blanco
-                        const grad = ctx.createLinearGradient(0, baselineY, 0, baselineY - maxHeight);
-                        grad.addColorStop(0.0, "#d4af37"); // Oro Base
-                        grad.addColorStop(0.6, "#fcf6ba"); // Champán Brillante
-                        grad.addColorStop(1.0, "#ffffff"); // Blanco Hielo (Puntas)
-
-                        ctx.fillStyle = grad;
-                        
-                        // Brillo sutil
-                        if (smoothedData[i] > 180) {
-                            ctx.save();
-                            ctx.shadowBlur = 10;
-                            ctx.shadowColor = "#d4af37";
-                            ctx.fillRect(startX, baselineY - bH, barWidth - barSpacing, bH);
-                            ctx.restore();
-                        } else {
-                            ctx.fillRect(startX, baselineY - bH, barWidth - barSpacing, bH);
-                        }
-
-                        // Reflejo de cristal superior
-                        ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-                        ctx.fillRect(startX, baselineY - bH, barWidth - barSpacing, 1);
-                    }
-
-                    // Marcador de Pico Minimalista
-                    if (peakH > 1) {
-                        ctx.fillStyle = "white";
+                    if (h > 1) {
                         ctx.save();
-                        ctx.globalAlpha = 0.5;
-                        ctx.fillRect(startX, baselineY - peakH - 2, barWidth - barSpacing, 1.5);
+                        const grad = ctx.createLinearGradient(0, baselineY, 0, baselineY - h);
+                        grad.addColorStop(0, vumetroColor);
+                        grad.addColorStop(1, "white");
+                        ctx.fillStyle = grad;
+                        ctx.globalAlpha = 0.8;
+                        ctx.fillRect(startX, baselineY - h, barWidth - barGap, h);
                         ctx.restore();
                     }
-
+                    if (fallingPeaks[i].pos > 0) {
+                        ctx.fillStyle = "white";
+                        ctx.globalAlpha = 1.0;
+                        const peakThickness = Math.max(2, maxHeight * 0.02);
+                        ctx.fillRect(startX, baselineY - fallingPeaks[i].pos - peakThickness, barWidth - barGap, peakThickness);
+                    }
                     startX += barWidth;
                 }
             }
         }
-        draw();
-
-        // --- GRABACIÓN ---
-        recordBtn.onclick = () => { if (!isRecording) startRecording(); else stopRecording(); };
+        requestAnimationFrame(draw);
 
         async function startRecording() {
-            resize(); if (!isPlaying) await togglePlayback();
-            recordedChunks = [];
-            const cStream = canvas.captureStream(60); 
-            const aDest = audioContext.createMediaStreamDestination();
-            source.connect(aDest);
-            const combined = new MediaStream([...cStream.getVideoTracks(), ...aDest.stream.getAudioTracks()]);
-            
-            const options = { 
-                mimeType: 'video/webm;codecs=vp9,opus', 
-                videoBitsPerSecond: qualitySelect.value === "2160" ? 80000000 : 40000000 
-            };
-            
-            try { mediaRecorder = new MediaRecorder(combined, options); } catch (e) { mediaRecorder = new MediaRecorder(combined); }
+            initAudio();
+            if (audioContext.state === 'suspended') await audioContext.resume();
+            if (!isPlaying) await togglePlayback();
 
-            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+            recordedChunks = [];
+            // Usamos el FPS seleccionado para la grabación
+            const stream = canvas.captureStream(targetFps);
+            audioDest = audioContext.createMediaStreamDestination();
+            analyzer.connect(audioDest);
+
+            const combined = new MediaStream([...stream.getVideoTracks(), ...audioDest.stream.getAudioTracks()]);
+            mediaRecorder = new MediaRecorder(combined, { 
+                mimeType: 'video/webm;codecs=vp9,opus', 
+                videoBitsPerSecond: 50000000 
+            });
+
+            mediaRecorder.ondataavailable = (e) => e.data.size > 0 && recordedChunks.push(e.data);
             mediaRecorder.onstop = () => {
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-                a.download = `render_gold_${qualitySelect.value}p.webm`; a.click();
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `render_${targetFps}fps_studio.webm`;
+                link.click();
             };
-            mediaRecorder.start(500);
-            isRecording = true; recordBtn.innerText = "🛑 Detener"; recordBtn.classList.add('active');
-            recIndicator.style.display = "block"; recIndicator.innerText = `GRABANDO ${qualitySelect.value}p...`;
+
+            mediaRecorder.start();
+            isRecording = true;
+            recordBtn.innerText = "Detener";
+            recordBtn.classList.add('bg-gray-700');
+            document.getElementById('recIndicator').style.display = "block";
+            document.getElementById('recIndicator').innerText = `GRABANDO A ${targetFps} FPS...`;
         }
 
         function stopRecording() {
-            mediaRecorder.stop(); isRecording = false;
-            recordBtn.innerText = "🚀 Grabar"; recordBtn.classList.remove('active');
-            recIndicator.style.display = "none";
+            mediaRecorder.stop();
+            isRecording = false;
+            recordBtn.innerText = "Grabar";
+            recordBtn.classList.remove('bg-gray-700');
+            document.getElementById('recIndicator').style.display = "none";
         }
+
+        recordBtn.onclick = () => isRecording ? stopRecording() : startRecording();
     </script>
 </body>
 </html>
