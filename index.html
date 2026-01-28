@@ -47,19 +47,23 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 10px;
+            padding: 15px;
             border: 1px dashed transparent;
-            transition: border 0.2s;
+            transition: border 0.2s, background 0.2s;
+            min-width: 50px;
+            min-height: 20px;
         }
 
         .draggable:hover {
             border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.03);
         }
 
         #dragVu {
-            width: 90%;
-            height: 100px;
+            width: 80%;
+            height: 80px;
             justify-content: center;
+            border-radius: 10px;
         }
 
         .track-input, .artist-input {
@@ -82,11 +86,35 @@
         .track-input { font-size: 5rem; text-transform: uppercase; font-weight: 700; }
         .artist-input { font-size: 1.5rem; font-weight: 700; }
         
-        #timeDisplay {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            color: transparent;
-            pointer-events: none;
+        #dragTimeline {
+            width: 90%;
+            height: 40px;
+            justify-content: center;
+        }
+
+        #timelineInput {
+            width: 100%;
+            cursor: pointer;
+            pointer-events: auto;
+            appearance: none;
+            background: transparent;
+        }
+
+        #timelineInput::-webkit-slider-runnable-track {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        #timelineInput::-webkit-slider-thumb {
+            appearance: none;
+            height: 16px;
+            width: 16px;
+            background: white;
+            border-radius: 50%;
+            margin-top: -5px;
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
+            border: 2px solid #000;
         }
 
         .controls {
@@ -220,7 +248,6 @@
     <video id="hiddenVideo" loop muted playsinline crossorigin="anonymous"></video>
 
     <div class="style-panel">
-        <!-- Ajustes de Texto -->
         <div class="flex flex-col gap-1">
             <span class="label-sm">Fuente General</span>
             <select id="fontSelect">
@@ -234,48 +261,28 @@
 
         <div class="flex flex-col gap-1">
             <span class="label-sm">Color Artista</span>
-            <div class="flex items-center gap-3 bg-white/5 p-2 rounded-lg border border-white/10">
-                <input type="color" id="textColorPicker" value="#d4af37">
-            </div>
+            <input type="color" id="textColorPicker" value="#d4af37">
         </div>
 
-        <!-- Ajustes de Rendimiento -->
         <div class="flex flex-col gap-1">
             <span class="label-sm">FPS (Fluidez)</span>
             <select id="fpsSelect">
-                <option value="30">30 FPS (Cine/Estándar)</option>
-                <option value="60" selected>60 FPS (Ultra Fluido)</option>
+                <option value="30">30 FPS</option>
+                <option value="60" selected>60 FPS</option>
             </select>
         </div>
 
-        <!-- Ajustes del Vúmetro -->
         <div class="p-2 border-l-2 border-yellow-500 bg-yellow-500/5 flex flex-col gap-2 my-2">
             <span class="label-sm text-yellow-500">Ajustes del Vúmetro</span>
-            
-            <div class="flex flex-col gap-1">
-                <span class="label-sm">Color del Vúmetro</span>
-                <input type="color" id="vuColorPicker" value="#ffffff">
-            </div>
-
+            <input type="color" id="vuColorPicker" value="#ffffff">
             <div class="slider-container">
-                <span class="label-sm">Ancho (Escala X)</span>
+                <span class="label-sm">Ancho Barra</span>
                 <input type="range" id="vumetroScale" min="0.1" max="1.0" step="0.01" value="0.9">
             </div>
-
             <div class="slider-container">
                 <span class="label-sm">Altura Máxima</span>
                 <input type="range" id="vumetroHeight" min="0.05" max="0.5" step="0.01" value="0.15">
             </div>
-        </div>
-
-        <div class="slider-container">
-            <span class="label-sm">Tamaño Título</span>
-            <input type="range" id="titleSize" min="0.02" max="0.15" step="0.005" value="0.08">
-        </div>
-
-        <div class="slider-container">
-            <span class="label-sm">Tamaño Artista</span>
-            <input type="range" id="artistSize" min="0.01" max="0.06" step="0.002" value="0.026">
         </div>
 
         <div class="toggle-container">
@@ -295,8 +302,14 @@
     </div>
 
     <div class="ui-layer">
-        <div id="dragVu" class="draggable" style="top: 90%; left: 50%; transform: translate(-50%, -50%);">
-            <div class="label-sm opacity-20 pointer-events-none">VÚMETRO (ARRASTRAR)</div>
+        <!-- Timeline superior -->
+        <div id="dragTimeline" class="draggable" style="top: 5%; left: 50%; transform: translate(-50%, -50%);">
+            <input type="range" id="timelineInput" value="0" min="0" step="0.1">
+        </div>
+
+        <!-- Vúmetro re-ajustado para ser arrastrable -->
+        <div id="dragVu" class="draggable" style="top: 85%; left: 50%; transform: translate(-50%, -50%);">
+            <div class="label-sm opacity-30 pointer-events-none select-none">ARRASTRAR VÚMETRO</div>
         </div>
 
         <div id="dragTitle" class="draggable" style="top: 35%; left: 50%; transform: translate(-50%, -50%);">
@@ -305,10 +318,6 @@
 
         <div id="dragArtist" class="draggable" style="top: 47%; left: 50%; transform: translate(-50%, -50%);">
             <input type="text" id="artistInput" class="artist-input" value="nombre del artista / beat type" spellcheck="false">
-        </div>
-
-        <div id="dragTime" class="draggable" style="top: 53%; left: 50%; transform: translate(-50%, -50%);">
-            <div id="timeDisplay">0:00 / 0:00</div>
         </div>
     </div>
 
@@ -336,6 +345,9 @@
         const ctx = canvas.getContext('2d', { alpha: false }); 
         const audio = document.getElementById('audioElement');
         const video = document.getElementById('hiddenVideo');
+        const timelineInput = document.getElementById('timelineInput');
+        const dragTimeline = document.getElementById('dragTimeline');
+        
         const titleInput = document.getElementById('titleInput');
         const artistInput = document.getElementById('artistInput');
         const bgFile = document.getElementById('bgFile');
@@ -347,17 +359,18 @@
         const fontSelect = document.getElementById('fontSelect');
         const fpsSelect = document.getElementById('fpsSelect');
         const bgOpacityControl = document.getElementById('bgOpacity');
-        const titleSizeControl = document.getElementById('titleSize');
-        const artistSizeControl = document.getElementById('artistSize');
         const vumetroScaleControl = document.getElementById('vumetroScale');
         const vumetroHeightControl = document.getElementById('vumetroHeight');
         const textColorPicker = document.getElementById('textColorPicker');
         const vuColorPicker = document.getElementById('vuColorPicker');
-        const videoAudioToggle = document.getElementById('videoAudioToggle');
+        
         const vumetroToggle = document.getElementById('vumetroToggle');
+        const videoAudioToggle = document.getElementById('videoAudioToggle');
 
         let audioContext, analyzer, musicSource, videoAudioSource, dataArray, smoothedData;
         let isPlaying = false, isRecording = false;
+        let recordedChunks = [];
+        let mediaRecorder;
         
         let accentColor = "#d4af37";
         let vumetroColor = "#ffffff";
@@ -366,61 +379,84 @@
 
         let bgImage = new Image();
         let backgroundType = 'none';
-
-        let mediaRecorder, recordedChunks = [];
-        let audioDest = null;
         let fallingPeaks = [];
 
-        // Selectores de Color y FPS
-        textColorPicker.oninput = (e) => {
-            accentColor = e.target.value;
-            titleInput.style.caretColor = accentColor;
+        videoAudioToggle.onchange = () => {
+            video.muted = !videoAudioToggle.checked;
         };
 
-        vuColorPicker.oninput = (e) => {
-            vumetroColor = e.target.value;
-        };
+        timelineInput.addEventListener('input', () => {
+            const seekTime = parseFloat(timelineInput.value);
+            if (!isNaN(seekTime)) {
+                audio.currentTime = seekTime;
+                if (backgroundType === 'video') {
+                    video.currentTime = seekTime;
+                }
+            }
+        });
 
+        audio.addEventListener('timeupdate', () => {
+            if (!isNaN(audio.duration) && !isRecording) {
+                timelineInput.max = audio.duration;
+                timelineInput.value = audio.currentTime;
+            }
+        });
+
+        textColorPicker.oninput = (e) => accentColor = e.target.value;
+        vuColorPicker.oninput = (e) => vumetroColor = e.target.value;
         fontSelect.onchange = () => {
             currentFont = fontSelect.value;
             titleInput.style.fontFamily = currentFont;
             artistInput.style.fontFamily = currentFont;
         };
+        fpsSelect.onchange = () => targetFps = parseInt(fpsSelect.value);
 
-        fpsSelect.onchange = () => {
-            targetFps = parseInt(fpsSelect.value);
-        };
-
-        // Arrastre UI
+        // LÓGICA DE ARRASTRE MEJORADA
         let activeItem = null;
         let offset = { x: 0, y: 0 };
 
         document.querySelectorAll('.draggable').forEach(item => {
             item.addEventListener('mousedown', (e) => {
-                if (e.button !== 0) return;
+                // Si el clic es en un input de texto o en el slider, no arrastrar
+                if (e.target.tagName === 'INPUT') return; 
+                
                 activeItem = item;
                 const rect = item.getBoundingClientRect();
+                
+                // Calculamos el offset respecto al centro del elemento o posición de clic
                 offset.x = e.clientX - rect.left;
                 offset.y = e.clientY - rect.top;
+                
                 item.style.transition = 'none';
+                item.style.zIndex = "100";
             });
         });
 
         window.addEventListener('mousemove', (e) => {
             if (!activeItem) return;
-            const xPercent = (e.clientX - offset.x + activeItem.offsetWidth / 2) / window.innerWidth * 100;
-            const yPercent = (e.clientY - offset.y + activeItem.offsetHeight / 2) / window.innerHeight * 100;
+            
+            // Calculamos posición en porcentaje para mantener responsividad
+            const x = e.clientX - offset.x + (activeItem.offsetWidth / 2);
+            const y = e.clientY - offset.y + (activeItem.offsetHeight / 2);
+            
+            const xPercent = (x / window.innerWidth) * 100;
+            const yPercent = (y / window.innerHeight) * 100;
+            
             activeItem.style.left = `${xPercent}%`;
             activeItem.style.top = `${yPercent}%`;
         });
 
-        window.addEventListener('mouseup', () => { activeItem = null; });
+        window.addEventListener('mouseup', () => {
+            if (activeItem) {
+                activeItem.style.zIndex = "10";
+                activeItem = null;
+            }
+        });
 
         function resize() {
             const h = parseInt(qualitySelect.value);
             const w = Math.round((h * 16) / 9);
-            canvas.width = w; 
-            canvas.height = h;
+            canvas.width = w; canvas.height = h;
         }
         qualitySelect.onchange = resize;
         resize();
@@ -429,57 +465,40 @@
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = (event) => {
-                    bgImage.src = event.target.result;
-                    backgroundType = 'image';
-                };
+                reader.onload = (event) => { bgImage.src = event.target.result; backgroundType = 'image'; };
                 reader.readAsDataURL(file);
             }
         };
-
         videoFile.onchange = (e) => {
             const file = e.target.files[0];
-            if (file) {
-                video.src = URL.createObjectURL(file);
-                backgroundType = 'video';
+            if (file) { 
+                video.src = URL.createObjectURL(file); 
+                backgroundType = 'video'; 
                 video.muted = !videoAudioToggle.checked;
-                video.load();
+                video.load(); 
             }
         };
-
         audioFile.onchange = (e) => {
             const file = e.target.files[0];
-            if (file) {
-                audio.src = URL.createObjectURL(file);
-                titleInput.value = file.name.split('.')[0].toUpperCase();
-                audio.load();
+            if (file) { 
+                audio.src = URL.createObjectURL(file); 
+                titleInput.value = file.name.split('.')[0].toUpperCase(); 
+                audio.load(); 
             }
         };
-
-        function formatTime(seconds) {
-            if (isNaN(seconds)) return "0:00";
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
-        }
 
         function initAudio() {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyzer = audioContext.createAnalyser();
                 analyzer.fftSize = 512;
-                analyzer.smoothingTimeConstant = 0.8;
-                
                 dataArray = new Uint8Array(analyzer.frequencyBinCount);
                 smoothedData = new Float32Array(analyzer.frequencyBinCount);
                 fallingPeaks = new Array(analyzer.frequencyBinCount).fill(0).map(() => ({ pos: 0, vel: 0 }));
-
                 musicSource = audioContext.createMediaElementSource(audio);
                 videoAudioSource = audioContext.createMediaElementSource(video);
-
                 musicSource.connect(analyzer);
                 videoAudioSource.connect(analyzer);
-                
                 analyzer.connect(audioContext.destination);
             }
         }
@@ -487,26 +506,22 @@
         async function togglePlayback() {
             if (audioContext && audioContext.state === 'suspended') await audioContext.resume();
             initAudio();
-
             if (isPlaying) {
                 audio.pause(); video.pause();
                 isPlaying = false; playPauseBtn.innerText = "▶ Play";
             } else {
                 try {
-                    if (audio.src && audio.src !== "") audio.play();
+                    if (audio.src) audio.play();
                     if (backgroundType === 'video') video.play();
                     isPlaying = true; playPauseBtn.innerText = "⏸ Pausa";
                 } catch (e) { console.error(e); }
             }
         }
-
         playPauseBtn.onclick = togglePlayback;
 
         let lastDrawTime = 0;
-        function draw(now) {
+        function draw(now = performance.now()) {
             requestAnimationFrame(draw);
-            
-            // Limitador de FPS
             const delta = now - lastDrawTime;
             const interval = 1000 / targetFps;
             if (delta < interval) return;
@@ -532,27 +547,24 @@
             }
 
             const elements = [
-                { id: 'dragTitle', input: titleInput, color: 'white', size: parseFloat(titleSizeControl.value), font: currentFont },
-                { id: 'dragArtist', input: artistInput, color: accentColor, size: parseFloat(artistSizeControl.value), font: currentFont },
-                { id: 'dragTime', text: formatTime(audio.currentTime) + " / " + formatTime(audio.duration), color: 'rgba(255, 255, 255, 0.3)', size: 0.018, font: 'Orbitron' }
+                { id: 'dragTitle', input: titleInput, color: 'white', size: 0.08, font: currentFont },
+                { id: 'dragArtist', input: artistInput, color: accentColor, size: 0.026, font: currentFont }
             ];
 
             elements.forEach(el => {
                 const domEl = document.getElementById(el.id);
-                if(!domEl) return;
                 const rect = domEl.getBoundingClientRect();
                 const posX = (rect.left + rect.width / 2) / window.innerWidth * canvas.width;
                 const posY = (rect.top + rect.height / 2) / window.innerHeight * canvas.height;
                 ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = el.color;
                 ctx.font = `700 ${canvas.height * el.size}px ${el.font}`;
-                ctx.fillText(el.input ? el.input.value.toUpperCase() : el.text, posX, posY);
+                ctx.fillText(el.input.value.toUpperCase(), posX, posY);
             });
 
             if (vumetroToggle.checked && analyzer) {
-                const vuContainer = document.getElementById('dragVu');
-                const vuRect = vuContainer.getBoundingClientRect();
+                const vuRect = document.getElementById('dragVu').getBoundingClientRect();
                 analyzer.getByteFrequencyData(dataArray);
-                const bins = Math.floor(dataArray.length * 0.75);
+                const bins = Math.floor(dataArray.length * 0.7);
                 const scaleX = parseFloat(vumetroScaleControl.value);
                 const totalWidth = canvas.width * scaleX;
                 const barGap = 4;
@@ -560,86 +572,86 @@
                 const baselineX = (vuRect.left + vuRect.width / 2) / window.innerWidth * canvas.width;
                 const baselineY = (vuRect.top + vuRect.height / 2) / window.innerHeight * canvas.height;
                 const maxHeight = canvas.height * parseFloat(vumetroHeightControl.value);
-                const gravity = 0.4 * (maxHeight / 100); 
-                let startX = baselineX - (totalWidth / 2);
+                const gravity = 0.5 * (maxHeight / 100); 
 
+                let startX = baselineX - (totalWidth / 2);
                 for (let i = 0; i < bins; i++) {
-                    const val = dataArray[i];
-                    smoothedData[i] = Math.max(val, smoothedData[i] - 3.5);
+                    smoothedData[i] = Math.max(dataArray[i], smoothedData[i] - 4);
                     const h = (smoothedData[i] / 255) * maxHeight;
-                    if (h > fallingPeaks[i].pos) {
-                        fallingPeaks[i].pos = h;
-                        fallingPeaks[i].vel = 0;
-                    } else {
-                        fallingPeaks[i].vel += gravity;
-                        fallingPeaks[i].pos -= fallingPeaks[i].vel;
-                        if (fallingPeaks[i].pos < 0) fallingPeaks[i].pos = 0;
-                    }
+                    
+                    if (h > fallingPeaks[i].pos) { fallingPeaks[i].pos = h; fallingPeaks[i].vel = 0; }
+                    else { fallingPeaks[i].vel += gravity; fallingPeaks[i].pos -= fallingPeaks[i].vel; }
+
                     if (h > 1) {
-                        ctx.save();
-                        const grad = ctx.createLinearGradient(0, baselineY, 0, baselineY - h);
-                        grad.addColorStop(0, vumetroColor);
-                        grad.addColorStop(1, "white");
-                        ctx.fillStyle = grad;
-                        ctx.globalAlpha = 0.8;
+                        ctx.fillStyle = vumetroColor; ctx.globalAlpha = 0.7;
                         ctx.fillRect(startX, baselineY - h, barWidth - barGap, h);
-                        ctx.restore();
                     }
                     if (fallingPeaks[i].pos > 0) {
-                        ctx.fillStyle = "white";
-                        ctx.globalAlpha = 1.0;
-                        const peakThickness = Math.max(2, maxHeight * 0.02);
-                        ctx.fillRect(startX, baselineY - fallingPeaks[i].pos - peakThickness, barWidth - barGap, peakThickness);
+                        ctx.fillStyle = "white"; ctx.globalAlpha = 1;
+                        ctx.fillRect(startX, baselineY - fallingPeaks[i].pos - 2, barWidth - barGap, 2);
                     }
                     startX += barWidth;
                 }
             }
+
+            if (!isRecording) {
+                const timeRect = dragTimeline.getBoundingClientRect();
+                const timeX = (timeRect.left) / window.innerWidth * canvas.width;
+                const timeY = (timeRect.top + timeRect.height / 2) / window.innerHeight * canvas.height;
+                const timeW = (timeRect.width) / window.innerWidth * canvas.width;
+                
+                ctx.globalAlpha = 0.15; ctx.fillStyle = "white";
+                ctx.fillRect(timeX, timeY, timeW, 2); 
+                
+                if (audio.duration) {
+                    const progress = audio.currentTime / audio.duration;
+                    ctx.globalAlpha = 0.8; ctx.fillStyle = accentColor;
+                    ctx.fillRect(timeX, timeY, timeW * progress, 2); 
+                    ctx.beginPath();
+                    ctx.arc(timeX + (timeW * progress), timeY + 1, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
         }
-        requestAnimationFrame(draw);
+        draw();
 
         async function startRecording() {
             initAudio();
             if (audioContext.state === 'suspended') await audioContext.resume();
-            if (!isPlaying) await togglePlayback();
-
             recordedChunks = [];
-            // Usamos el FPS seleccionado para la grabación
+            
+            dragTimeline.style.display = 'none';
+            isRecording = true;
+            recordBtn.innerText = "Detener";
+            document.getElementById('recIndicator').style.display = "block";
+
             const stream = canvas.captureStream(targetFps);
-            audioDest = audioContext.createMediaStreamDestination();
+            const audioDest = audioContext.createMediaStreamDestination();
             analyzer.connect(audioDest);
-
             const combined = new MediaStream([...stream.getVideoTracks(), ...audioDest.stream.getAudioTracks()]);
-            mediaRecorder = new MediaRecorder(combined, { 
-                mimeType: 'video/webm;codecs=vp9,opus', 
-                videoBitsPerSecond: 50000000 
-            });
-
-            mediaRecorder.ondataavailable = (e) => e.data.size > 0 && recordedChunks.push(e.data);
+            mediaRecorder = new MediaRecorder(combined, { mimeType: 'video/webm;codecs=vp9,opus', videoBitsPerSecond: 50000000 });
+            
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+            
             mediaRecorder.onstop = () => {
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `render_${targetFps}fps_studio.webm`;
+                link.download = "video_studio_render.webm";
                 link.click();
+                
+                dragTimeline.style.display = 'flex';
+                isRecording = false;
+                recordBtn.innerText = "Grabar";
+                document.getElementById('recIndicator').style.display = "none";
             };
-
+            
             mediaRecorder.start();
-            isRecording = true;
-            recordBtn.innerText = "Detener";
-            recordBtn.classList.add('bg-gray-700');
-            document.getElementById('recIndicator').style.display = "block";
-            document.getElementById('recIndicator').innerText = `GRABANDO A ${targetFps} FPS...`;
         }
 
-        function stopRecording() {
-            mediaRecorder.stop();
-            isRecording = false;
-            recordBtn.innerText = "Grabar";
-            recordBtn.classList.remove('bg-gray-700');
-            document.getElementById('recIndicator').style.display = "none";
-        }
-
-        recordBtn.onclick = () => isRecording ? stopRecording() : startRecording();
+        recordBtn.onclick = () => isRecording ? mediaRecorder.stop() : startRecording();
     </script>
 </body>
 </html>
